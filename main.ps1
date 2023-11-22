@@ -1,24 +1,21 @@
-Add-Type -AssemblyName PresentationCore
-Add-Type -AssemblyName PresentationFramework
 
 # Get image from clipboard
 $clipboardData = [Windows.Clipboard]::GetDataObject()
 if ($clipboardData -and $clipboardData.GetDataPresent('System.Windows.Media.Imaging.BitmapSource')) {
-    $image = $clipboardData.GetData('System.Windows.Media.Imaging.BitmapSource')
+# Get the clipboard image using ImageMagick
+$magickArguments = "clipboard:"
+$imageData = magick $magickArguments -format "%wx%h" info:
 
-    # Specify the file path where you want to save the image
-    $filePath = "I:\Software Development\imagePadder\image.png"
-    # Save the image using PngBitmapEncoder
-    $encoder = New-Object Windows.Media.Imaging.PngBitmapEncoder
-    $encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($image))
+# Get the current image dimensions
+$currentWidth, $currentHeight = $imageData -split 'x'
 
-    # Use MemoryStream to get the bytes
-    $memoryStream = New-Object IO.MemoryStream
-    $encoder.Save($memoryStream)
-    
-    # Write the bytes to a file
-    [System.IO.File]::WriteAllBytes($filePath, $memoryStream.ToArray())
+# Set the desired dimensions
+$desiredWidth = 512
+$desiredHeight = 512
 
+# Use ImageMagick to add transparent padding
+$magickArguments = "convert", "clipboard:", "-background", "none", "-gravity", "center", "-extent", "$desiredWidth x $desiredHeight", "output.png"
+magick $magickArguments
     Write-Host "Image saved to $filePath"
 }
 else {
